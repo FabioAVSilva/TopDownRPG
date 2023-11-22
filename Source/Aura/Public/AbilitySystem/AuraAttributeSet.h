@@ -60,8 +60,7 @@ class AURA_API UAuraAttributeSet : public UAttributeSet
 public:
 	UAuraAttributeSet();
 	virtual  void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 	/*
@@ -112,7 +111,7 @@ public:
 	FGameplayAttributeData CriticalHitChance;
 	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, CriticalHitChance);
 
-	// Luck Attribute - Improves chance based attributes: derived from Intelligence
+	// Luck Attribute - Improves chance based attributes: derived from Intelligence and Resilience
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Luck, Category = "Secondary Attributes")
 	FGameplayAttributeData Luck;
 	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, Luck);
