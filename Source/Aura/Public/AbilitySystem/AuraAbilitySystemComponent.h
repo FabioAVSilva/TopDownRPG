@@ -22,6 +22,8 @@ public:
 
 	FEffectAssetTags EffectAssetTags;
 
+	void AddCharacterAbilities(const TArray<TSubclassOf<UGameplayAbility>>& StartupAbilities);
+
 protected:
 
 	// Function bound to OnGameplayEffectAppliedDelegateToSelf
