@@ -7,6 +7,8 @@
 #include "AuraGameplayTags.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "NavigationPath.h"
+#include "NavigationSystem.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "Components/SplineComponent.h"
 #include "Input/AuraInputComponent.h"
@@ -26,6 +28,7 @@ void AAuraPlayerController::PlayerTick(float DeltaTime)
 	
 }
 
+// Highlight enemy under cursor
 void AAuraPlayerController::CursorTrace()
 {
 	FHitResult CursorHit;
@@ -82,11 +85,9 @@ void AAuraPlayerController::CursorTrace()
 			// Case E
 		}
 	}
-
-	
-
 }
 
+// Player presses on an ability key
 void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
 {
 	if (InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
@@ -97,12 +98,39 @@ void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
 	
 }
 
+// Player releases an ability key
 void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 {
-	if (GetAbilitySystemComponent() == nullptr) return;
-	GetAbilitySystemComponent()->AbilityInputTagReleased(InputTag);
+	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB) || bTargeting)
+	{
+		if (GetAbilitySystemComponent())
+		{
+			GetAbilitySystemComponent()->AbilityInputTagReleased(InputTag);
+		}
+		return;
+	}
+
+	APawn* ControlledPawn = GetPawn();
+	if (FollowTime <= ShortPressThreshold && ControlledPawn)
+	{
+		if (UNavigationPath* NavPath = UNavigationSystemV1::FindPathToLocationSynchronously(this, ControlledPawn->GetActorLocation(), CachedDestination))
+		{
+			Spline->ClearSplinePoints();
+			for (FVector& PointLoc : NavPath->PathPoints)
+			{
+				Spline->AddSplinePoint(PointLoc, ESplineCoordinateSpace::World);
+				DrawDebugSphere(GetWorld(), PointLoc, 8.f, 8, FColor::Green, false, 5.f);
+			}
+			bAutoRunning = true;
+		}
+		
+	}
+
+	FollowTime = 0.f;
+	bTargeting = false;
 }
 
+// Player holds an ability key
 void AAuraPlayerController::AbilityInputTagHeld(FGameplayTag InputTag)
 {
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB) || bTargeting)
@@ -129,6 +157,7 @@ void AAuraPlayerController::AbilityInputTagHeld(FGameplayTag InputTag)
 	
 }
 
+// Gets currently stored ASC, or stores one if it doesn't exist
 UAuraAbilitySystemComponent* AAuraPlayerController::GetAbilitySystemComponent()
 {
 	if (AuraAbilitySystemComponent == nullptr)
@@ -159,7 +188,7 @@ void AAuraPlayerController::BeginPlay()
 	InputModeData.SetHideCursorDuringCapture(false);
 	SetInputMode(InputModeData);
 }
-
+// Creates Input Component and binds actions to it
 void AAuraPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -169,6 +198,7 @@ void AAuraPlayerController::SetupInputComponent()
 	AuraInputComponent->BindAbilityActions(InputConfig, this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased, &ThisClass::AbilityInputTagHeld);
 }
 
+// Function to move player with WASD keys
 void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 {
 	const FVector2d InputAxisVector = InputActionValue.Get<FVector2d>();
