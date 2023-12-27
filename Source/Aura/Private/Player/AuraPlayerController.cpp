@@ -17,7 +17,6 @@
 AAuraPlayerController::AAuraPlayerController()
 {
 	bReplicates = true;
-
 	Spline = CreateDefaultSubobject<USplineComponent>("Spline");
 }
 
@@ -25,9 +24,7 @@ void AAuraPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 	CursorTrace();
-
 	AutoRun();
-	
 }
 
 void AAuraPlayerController::AutoRun()
@@ -51,59 +48,16 @@ void AAuraPlayerController::AutoRun()
 // Highlight enemy under cursor
 void AAuraPlayerController::CursorTrace()
 {
-	FHitResult CursorHit;
 	GetHitResultUnderCursor(ECC_Visibility, false, CursorHit);
 	if (!CursorHit.bBlockingHit) return;
 
 	LastActor = ThisActor;
 	ThisActor = Cast<IEnemyInterface>(CursorHit.GetActor());
 
-	/**
-	 *	Line Trace from cursor - Possible scenarios:
-	 *
-	 *		A. Both Actors null
-	 *			-Do nothing
-	 *			
-	 *		B. Only LastActor null
-	 *			-Highlight ThisActor
-	 *			
-	 *		C. Only ThisActor null
-	 *			-Unhighlight LastActor
-	 *			
-	 *		D. Both Actors valid and equal
-	 *			-Do nothing
-	 *			
-	 *		E. Both Actors valid and not equal
-	 *			-Unhighlight LastActor
-	 *			-Highlight ThisActor
-	 */
-
-	if (LastActor == nullptr)
+	if (LastActor != ThisActor)
 	{
-		if (ThisActor != nullptr)
-		{
-			// Case B
-			ThisActor->HighlightActor();
-		}
-		// Case A
-	}
-	else // LastActor is valid
-	{
-		if (ThisActor == nullptr)
-		{
-			// Case C
-			LastActor->UnHighlightActor();
-		}
-		else // Both Actors valid
-		{
-			if (LastActor != ThisActor)
-			{
-				// Case E
-				LastActor->UnHighlightActor();
-				ThisActor->HighlightActor();
-			}
-			// Case E
-		}
+		if(LastActor) LastActor->UnHighlightActor();
+		if(ThisActor) ThisActor->HighlightActor();
 	}
 }
 
@@ -123,14 +77,11 @@ void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 {
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB) || bTargeting)
 	{
-		if (GetAbilitySystemComponent())
-		{
-			GetAbilitySystemComponent()->AbilityInputTagReleased(InputTag);
-		}
+		if (GetAbilitySystemComponent()) GetAbilitySystemComponent()->AbilityInputTagReleased(InputTag);
 		return;
 	}
 
-	APawn* ControlledPawn = GetPawn();
+	const APawn* ControlledPawn = GetPawn();
 	if (FollowTime <= ShortPressThreshold && ControlledPawn)
 	{
 		if (UNavigationPath* NavPath = UNavigationSystemV1::FindPathToLocationSynchronously(this, ControlledPawn->GetActorLocation(), CachedDestination))
@@ -139,9 +90,8 @@ void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 			for (FVector& PointLoc : NavPath->PathPoints)
 			{
 				Spline->AddSplinePoint(PointLoc, ESplineCoordinateSpace::World);
-				DrawDebugSphere(GetWorld(), PointLoc, 8.f, 8, FColor::Green, false, 5.f);
 			}
-			CachedDestination = NavPath->PathPoints[NavPath->PathPoints.Num() - 1];
+			CachedDestination = NavPath->PathPoints.Last();
 			bAutoRunning = true;
 		}
 		
@@ -156,19 +106,13 @@ void AAuraPlayerController::AbilityInputTagHeld(FGameplayTag InputTag)
 {
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB) || bTargeting)
 	{
-		if (GetAbilitySystemComponent())
-		{
-			GetAbilitySystemComponent()->AbilityInputTagHeld(InputTag);
-		}
+		if (GetAbilitySystemComponent()) GetAbilitySystemComponent()->AbilityInputTagHeld(InputTag);
 		return;
 	}
 
 	FollowTime += GetWorld()->GetDeltaSeconds();
-	FHitResult Hit;
-	if (GetHitResultUnderCursor(ECC_Visibility, false, Hit))
-	{
-		CachedDestination = Hit.ImpactPoint;
-	}
+
+	if (CursorHit.bBlockingHit) CachedDestination = CursorHit.ImpactPoint;
 
 	if (APawn* ControlledPawn = GetPawn())
 	{
@@ -193,11 +137,10 @@ UAuraAbilitySystemComponent* AAuraPlayerController::GetAbilitySystemComponent()
 void AAuraPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	check(AuraContext);
 
-	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
-	if(Subsystem)
+	if(UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(AuraContext, 0);
 	}
