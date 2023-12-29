@@ -9,6 +9,7 @@
 AAuraProjectile::AAuraProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
 
 	// Create projectile sphere and set collision responses
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
