@@ -5,6 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
+#include "Aura/Aura.h"
 #include "Components/CapsuleComponent.h"
 
 AAuraCharacterBase::AAuraCharacterBase()
@@ -12,9 +13,13 @@ AAuraCharacterBase::AAuraCharacterBase()
 
 	PrimaryActorTick.bCanEverTick = false;
 
+	// Set collision channel responses
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Projectile, ECR_Overlap);
+	GetMesh()->SetGenerateOverlapEvents(true);
 
+	//  Create weapon attach it to the hand socket
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>("Weapon");
 	Weapon->SetupAttachment(GetMesh(), "WeaponHandSocket");
 	Weapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
