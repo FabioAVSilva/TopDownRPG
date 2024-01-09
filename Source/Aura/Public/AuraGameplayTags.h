@@ -21,7 +21,6 @@ public:
 	FGameplayTag Attributes_Primary_Intelligence;
 	FGameplayTag Attributes_Primary_Resilience;
 	FGameplayTag Attributes_Primary_Vigor;
-	
 
 	//Secondary Attributes
 	FGameplayTag Attributes_Secondary_Armor;
@@ -45,6 +44,10 @@ public:
 	FGameplayTag InputTag_2;
 	FGameplayTag InputTag_3;
 	FGameplayTag InputTag_4;
+
+	// Meta Tags
+	FGameplayTag Damage;
+
 
 private:
 	static FAuraGameplayTags GameplayTags;
