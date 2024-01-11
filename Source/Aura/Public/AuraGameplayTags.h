@@ -47,6 +47,7 @@ public:
 
 	// Meta Tags
 	FGameplayTag Damage;
+	FGameplayTag Effects_HitReact;
 
 
 private:
